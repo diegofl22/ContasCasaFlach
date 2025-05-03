@@ -1,45 +1,77 @@
-// index.js
-
-// 1. Carregar variáveis do .env logo no início
+// Importações
 require('dotenv').config();
-
-// 2. Importar bibliotecas
 const TelegramBot = require('node-telegram-bot-api');
 const { google } = require('googleapis');
 const fs = require('fs');
 
-// 3. Inicializar o bot do Telegram
+// Carregar credenciais do Google
+const credentials = require('./credentials.json');
+
+// Configurar Telegram Bot
 const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
 
-// 4. Conectar ao Google Sheets
-const auth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(fs.readFileSync('credentials.json')),
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-});
-const sheets = google.sheets({ version: 'v4', auth });
+// Função para autenticar no Google Sheets
+function authenticateGoogle() {
+    const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    return auth;
+}
 
-// 5. Comando básico: Start
+// Função para acessar a planilha
+async function getSheet() {
+    const auth = authenticateGoogle();
+    const sheets = google.sheets({ version: 'v4', auth });
+    return sheets;
+}
+
+// Comando /start
 bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, '🤖 Olá! Eu sou o seu Bot Financeiro! Use /menu para começar.');
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, "Olá! Eu sou o Bot ContasCasa! Use /menu para começar.");
 });
 
-// 6. Comando básico: Menu
+// Comando /menu
 bot.onText(/\/menu/, (msg) => {
-  const chatId = msg.chat.id;
-  const opts = {
-    reply_markup: {
-      keyboard: [
-        ['/lancar', '/editar'],
-        ['/excluir', '/saldo'],
-        ['/relatorio']
-      ],
-      resize_keyboard: true,
-      one_time_keyboard: false
-    }
-  };
-  bot.sendMessage(chatId, '📋 Escolha uma opção:', opts);
+    const chatId = msg.chat.id;
+    const options = {
+        reply_markup: {
+            keyboard: [
+                [{ text: "/lancar" }, { text: "/saldo" }],
+                [{ text: "/relatorio" }, { text: "/editar" }, { text: "/excluir" }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: false,
+        },
+    };
+    bot.sendMessage(chatId, "Escolha uma opção:", options);
 });
 
-// Observação:
-// Abaixo desse ponto, a gente ainda vai adicionar os fluxos completos de /lancar, /editar, /excluir, /saldo e /relatorio.
+// Fallback para mensagens não reconhecidas
+bot.on('message', (msg) => {
+    if (!msg.text.startsWith('/')) {
+        bot.sendMessage(msg.chat.id, "Por favor, use o menu ou comandos disponíveis. 🚀");
+    }
+});
+
+// Placeholder para os próximos comandos
+bot.onText(/\/lancar/, (msg) => {
+    bot.sendMessage(msg.chat.id, "📝 Em breve: função de lançar despesas!");
+});
+
+bot.onText(/\/saldo/, (msg) => {
+    bot.sendMessage(msg.chat.id, "💵 Em breve: função de ver saldo!");
+});
+
+bot.onText(/\/relatorio/, (msg) => {
+    bot.sendMessage(msg.chat.id, "📄 Em breve: função de gerar relatório!");
+});
+
+bot.onText(/\/editar/, (msg) => {
+    bot.sendMessage(msg.chat.id, "✏️ Em breve: função de editar lançamentos!");
+});
+
+bot.onText(/\/excluir/, (msg) => {
+    bot.sendMessage(msg.chat.id, "❌ Em breve: função de excluir lançamentos!");
+});
